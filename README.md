@@ -1,4 +1,5 @@
 # security-qa-roadmap
+<<<<<<< HEAD
 
 Hands-on roadmap to transition from **Senior QA Automation** to **Security QA / Application Security**
 by building practical, repeatable security tests.
@@ -18,3 +19,6 @@ Each checkpoint includes:
 - **Phase 6:** Job-ready package
 
 > Consistency beats intensity.
+=======
+Hands-on API security testing roadmap combining QA automation mindset with OWASP Top 10. Includes Postman collections, negative security tests, and documented checkpoints.
+>>>>>>> 6e86a12d7050a78e89c8e4e3a7b724eec53f642e
