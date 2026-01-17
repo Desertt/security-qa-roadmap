@@ -1,0 +1,60 @@
+{
+	"info": {
+		"_postman_id": "51bdacfc-c0b3-48ef-a12f-628cbc3a4fd3",
+		"name": "OWASP",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "13928235"
+	},
+	"item": [
+		{
+			"name": "idor-env",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript",
+						"packages": {},
+						"requests": {}
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"IDOR check: should not access another user's resource\", function () {\r",
+							"  pm.expect(pm.response.code).to.not.equal(200);\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {},
+						"requests": {}
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://127.0.0.1:8010/users/user_103",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8010",
+					"path": [
+						"users",
+						"user_103"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
