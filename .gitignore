@@ -1,0 +1,2 @@
+# Postman local secrets (future-proof)
+*.postman_environment.local.json
