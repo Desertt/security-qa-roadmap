@@ -1,2 +1,11 @@
-# Postman local secrets (future-proof)
+# Postman local environments (secrets should never be committed)
 *.postman_environment.local.json
+
+# Future secret files
+.env
+.env.*
+secrets.json
+
+# OS / Editor
+.DS_Store
+.vscode/
