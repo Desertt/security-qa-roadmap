@@ -1,0 +1,61 @@
+{
+  "info": {
+    "_postman_id": "df40ea36-ef75-4518-b4d8-f33cd077867c",
+    "name": "ExpiredToken",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "13928235"
+  },
+  "item": [
+    {
+      "name": "CP-1.3-T04 — Expired Token — GET /users Copy",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 401\", function () {\r",
+              "  pm.response.to.have.status(401);\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Error mentions token expiration (optional)\", function () {\r",
+              "  const text = pm.response.text().toLowerCase();\r",
+              "  pm.expect(text).to.satisfy(t =>\r",
+              "    t.includes(\"expired\") || t.includes(\"token\") || t.includes(\"unauthorized\")\r",
+              "  );\r",
+              "});\r",
+              ""
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{expired_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/users/",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "users",
+            ""
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}

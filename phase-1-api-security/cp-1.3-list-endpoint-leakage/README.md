@@ -90,3 +90,24 @@ authentication misconfiguration.
 - T01 — No Token ✅
 - T02 — Invalid Token ✅
 - T03 — Valid Token ✅
+
+### T04 — Expired Token — GET /users
+- Expected Result: 401 Unauthorized
+- Actual Result: 200 OK
+- Status: ❌ Failed (Security Finding)
+
+#### Finding
+Requests made with an expired JWT are still accepted by the `/users` endpoint.
+The backend does not appear to enforce the `exp` claim during token validation.
+
+This behavior allows continued access with expired tokens and may lead to
+unauthorized data exposure.
+
+#### Risk
+- Authentication bypass via expired tokens
+- Session lifetime not enforced
+- Increased attack window if a token is leaked
+
+#### Recommendation
+Ensure JWT expiration (`exp`) is validated during token verification and
+expired tokens are rejected with `401 Unauthorized`.
