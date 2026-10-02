@@ -1,24 +1,27 @@
-# security-qa-roadmap
-<<<<<<< HEAD
+# Security QA Roadmap
 
-Hands-on roadmap to transition from **Senior QA Automation** to **Security QA / Application Security**
-by building practical, repeatable security tests.
+Hands-on engineering portfolio focused on the transition from **Senior QA / Test Automation**
+toward **Security-Aware Quality Engineering, Security QA, Application Security, and DevSecOps**.
 
-Each checkpoint includes:
-**goal → target endpoint → negative test → evidence → result**
+The repository applies a practical and evidence-driven approach to security testing by combining
+QA automation experience with API security, negative testing, secure software delivery, and
+repeatable technical evidence.
 
-## Structure
-- `phase-1-api-security/` → OWASP API Top 10 focused tests (Postman-first)
+## Engineering Approach
 
-## Phases
-- **Phase 1:** API & App Security fundamentals (IDOR, Auth, Rate Limiting, Business Logic)
-- **Phase 2:** Security automation & DevSecOps (Newman, CI)
-- **Phase 3:** Offensive awareness (safe labs)
-- **Phase 4:** Platform & Cloud basics
-- **Phase 5:** Certifications & portfolio hardening
-- **Phase 6:** Job-ready package
+Each checkpoint follows the same evidence chain:
 
-> Consistency beats intensity.
-=======
-Hands-on API security testing roadmap combining QA automation mindset with OWASP Top 10. Includes Postman collections, negative security tests, and documented checkpoints.
->>>>>>> 6e86a12d7050a78e89c8e4e3a7b724eec53f642e
+**Goal → Target Endpoint → Threat / Negative Test → Execution → Evidence → Finding → Risk → Recommendation**
+
+The objective is not only to identify a security issue, but to demonstrate how the issue was
+tested, what evidence supports the result, and how the finding could affect software quality
+and security.
+
+## Current Structure
+
+```text
+phase-1-api-security/
+├── cp-1.1-idor/
+├── cp-1.2-auth-jwt/
+├── cp-1.3-list-endpoint-leakage/
+└── cp-1.4-idor-bola/
