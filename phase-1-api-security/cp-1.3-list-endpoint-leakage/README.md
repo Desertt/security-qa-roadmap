@@ -1,113 +1,164 @@
-# CP-1.3 — List Endpoint Leakage (JWT Authentication)
+[🇬🇧 English](README.md) | [🇹🇷 Türkçe](README.tr.md)
 
-## Overview
-This checkpoint evaluates access control enforcement on the `/users` list endpoint
-by testing three different authentication scenarios using JWT-based authorization.
+# CP-1.3 — List Endpoint Authentication Matrix
 
-The goal is to ensure that the endpoint is not unintentionally exposed and that
-authorization is handled consistently and securely.
+## Goal
 
----
+Evaluate authentication enforcement on the `GET /users` list endpoint across multiple JWT states:
+
+- no token
+- invalid token
+- valid token
+- expired token
 
 ## Endpoint Under Test
+
 - **Method:** GET
 - **Path:** `/users`
 
----
-
-## Test Scenarios
+## Test Matrix
 
 ### T01 — No Token
-- Description: Request sent without any Authorization header
-- Expected Result: Access denied
-- Expected Status Code: `401 Unauthorized` (or `403 Forbidden`)
-- Outcome: ✅ Verified via Postman
+
+**Expected**
+
+- access denied
+- typically `401 Unauthorized` or `403 Forbidden`
+
+**Committed evidence**
+
+- `evidence/CP-1.3_T01_no_token_list_exposed_200.png`
+
+**Actual captured behavior**
+
+- evidence filename records `200`
+
+**Result**
+
+⚠️ Security finding — the captured run indicates list access without a token.
 
 ---
 
 ### T02 — Invalid Token
-- Description: Request sent with a malformed or invalid JWT
-- Expected Result: Access denied
-- Expected Status Code: `401 Unauthorized`
-- Outcome: ✅ Verified via Postman
+
+**Expected**
+
+- `401 Unauthorized`
+
+**Committed evidence**
+
+- `evidence/CP-1.3_T02_invalid_token_list_200.png`
+
+**Actual captured behavior**
+
+- evidence filename records `200`
+
+**Result**
+
+⚠️ Security finding — invalid-token access was not rejected in the captured run.
 
 ---
 
 ### T03 — Valid Token
-- Description: Request sent with a valid JWT obtained via login flow
-- Expected Result: Authorized access
-- Expected Status Code: `200 OK`
-- Outcome: ✅ Verified via Postman  
-- Additional Validation:
-  - Response format is JSON
-  - Response body returned successfully
+
+**Expected**
+
+- `200 OK`
+- JSON response
+
+**Committed evidence**
+
+- `evidence/CP-1.3_T03_valid_token_get_users_200.png`
+
+**Result**
+
+✅ Valid-token access returned the expected success status.
 
 ---
+
+### T04 — Expired Token
+
+**Expected**
+
+- `401 Unauthorized`
+
+The committed README history records:
+
+- **Actual:** `200 OK`
+- expired-token assertion failed
+
+Evidence:
+
+- `evidence/CP-1.3_T04 FAILED (as expected).png`
+- `postman/ExpiredToken.postman_collection.json`
+
+**Result**
+
+⚠️ Security finding — the captured run indicates token expiration was not enforced.
 
 ## Tooling
-- Postman (manual execution)
-- JWT-based authentication
-- Environment variables used for:
-  - `base_url`
-  - `valid_token`
 
----
+- Postman
+- JWT Bearer token scenarios
+- Postman assertions
+- environment variables including `base_url` and token values
+
+## Finding
+
+The captured checkpoint results indicate **inconsistent JWT authentication enforcement** on the list endpoint.
+
+The strongest supported interpretation is:
+
+- missing token accepted in the captured run
+- invalid token accepted in the captured run
+- valid token accepted as expected
+- expired token accepted in the captured run
+
+This is an authentication-control problem rather than an object-level authorization finding.
+
+## Risk
+
+If reproduced in production, potential impact includes:
+
+- unauthenticated access to user-list data
+- ineffective invalid-token rejection
+- session lifetime not enforced
+- increased exposure window for leaked expired tokens
+
+Potential severity depends on data sensitivity and production architecture.
+
+## Recommendation
+
+1. Centralize JWT verification for protected endpoints.
+2. Reject missing authentication.
+3. Reject malformed or invalid tokens.
+4. Verify JWT signature.
+5. Enforce `exp`.
+6. Validate `iss` and `aud` where required by the trust model.
+7. Add automated negative authentication tests to CI/CD.
+8. Ensure security tests fail the pipeline when protected endpoints accept invalid authentication states.
 
 ## Evidence
-Postman test executions were completed successfully for all three scenarios.
-Due to Postman UI limitations during the session, execution screenshots
-(evidence) could not be exported.
 
-Validation was confirmed through:
-- HTTP status codes
-- Postman test assertions
-- Manual inspection of responses
+- `evidence/CP-1.3_T01_no_token_list_exposed_200.png`
+- `evidence/CP-1.3_T02_invalid_token_list_200.png`
+- `evidence/CP-1.3_T03_valid_token_get_users_200.png`
+- `evidence/CP-1.3_T04 FAILED (as expected).png`
+- `postman/CP-1.3_postman_collection_v1.json`
+- `postman/ExpiredToken.postman_collection.json`
+- `postman/CP-1.3_postman_environment_idor-auth-env_v1.json`
 
-> Note: No sensitive information (tokens or user data) was persisted or committed.
+## Limitation
 
----
-
-## Security Notes
-- The `/users` endpoint is protected against unauthenticated access.
-- Invalid or missing tokens do not expose sensitive information.
-- Behavior differs correctly between authorized and unauthorized requests.
-- No sensitive fields (passwords, hashes, secrets) were observed in responses.
-
----
-
-## Conclusion
-The `/users` list endpoint enforces JWT-based authorization correctly.
-Unauthorized access attempts are blocked, and valid tokens grant access as expected.
-
-This checkpoint confirms that there is no list endpoint leakage related to
-authentication misconfiguration.
-
----
+This README documents the behavior represented by the committed evidence and Postman assets.
+A production assessment should repeat the matrix against the current deployed implementation
+and capture normalized response bodies, status codes, and token metadata.
 
 ## Status
-**CP-1.3 — COMPLETED**
 
-- T01 — No Token ✅
-- T02 — Invalid Token ✅
+**CP-1.3 — COMPLETED WITH SECURITY FINDINGS**
+
+- T01 — No Token ⚠️
+- T02 — Invalid Token ⚠️
 - T03 — Valid Token ✅
-
-### T04 — Expired Token — GET /users
-- Expected Result: 401 Unauthorized
-- Actual Result: 200 OK
-- Status: ❌ Failed (Security Finding)
-
-#### Finding
-Requests made with an expired JWT are still accepted by the `/users` endpoint.
-The backend does not appear to enforce the `exp` claim during token validation.
-
-This behavior allows continued access with expired tokens and may lead to
-unauthorized data exposure.
-
-#### Risk
-- Authentication bypass via expired tokens
-- Session lifetime not enforced
-- Increased attack window if a token is leaked
-
-#### Recommendation
-Ensure JWT expiration (`exp`) is validated during token verification and
-expired tokens are rejected with `401 Unauthorized`.
+- T04 — Expired Token ⚠️

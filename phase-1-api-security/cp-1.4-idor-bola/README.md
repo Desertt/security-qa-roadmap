@@ -1,141 +1,186 @@
-# CP-1.4 — Broken Object Level Authorization (BOLA / IDOR)
+[🇬🇧 English](README.md) | [🇹🇷 Türkçe](README.tr.md)
 
-## Overview
-This checkpoint evaluates object-level access control on the `/users/{userId}` endpoint.
+# CP-1.4 — Object ID Manipulation / BOLA Validation Preparation
 
-The purpose is to determine whether the API properly enforces authorization
-when accessing individual user records by manipulating the `userId` parameter.
+## Goal
 
-This test focuses on identifying potential:
+Evaluate object-access behavior on `GET /users/{userId}` and determine whether the current
+test evidence is sufficient to prove Broken Object Level Authorization (BOLA).
 
-> Broken Object Level Authorization (BOLA)  
-> also historically known as IDOR (Insecure Direct Object Reference)
-
----
+BOLA requires an authorization boundary between an authenticated requester and a target object.
+The current checkpoint does not establish a controlled two-principal ownership matrix,
+so it should be treated as **BOLA validation preparation**, not definitive BOLA proof.
 
 ## Endpoint Under Test
+
 - **Method:** GET
 - **Path:** `/users/{userId}`
 
----
-
 ## Test Scenarios
 
-### T01 — Baseline Access
-- Description: Retrieve an existing user using a known ID.
-- Request: `GET /users/user_100`
-- Expected Result: Successful retrieval
-- Expected Status Code: `200 OK`
-- Outcome: ✅ Verified via Postman
+### T01 — Baseline Object Access
+
+Request:
+
+`GET /users/user_100`
+
+The committed Postman collection configures this request with `noauth`.
+
+Evidence:
+
+- `evidence/CP-1.4-T01_01_get-user-100_200.png`
+
+Captured result:
+
+- `200 OK`
+
+**Interpretation:** baseline object retrieval confirmed.
 
 ---
 
-### T01 — Object ID Manipulation
-- Description: Modify the `userId` parameter to access another user.
-- Request: `GET /users/user_101`
-- Expected Result (Secure System):
-  - `401 Unauthorized` or `403 Forbidden`
-- Actual Result:
-  - `200 OK`
-  - User data returned successfully
-- Outcome: ⚠️ Authorization not enforced
+### T02 — Object ID Manipulation
+
+Request:
+
+`GET /users/user_101`
+
+The committed Postman collection sends an invalid bearer token for this request.
+
+Evidence:
+
+- `evidence/CP-1.4-T01_02_get-user-101_200.png`
+
+Captured result:
+
+- `200 OK`
+
+**Interpretation:** changing the object ID still returned an existing user object in the captured run,
+despite the request containing an invalid token.
+
+This is an **authentication / authorization enforcement concern**.
+
+It does **not yet prove BOLA**, because the run does not establish a valid authenticated User A
+attempting to access an object owned by User B.
 
 ---
 
-### T01 — Nonexistent Object
-- Description: Request a user ID that does not exist.
-- Request: `GET /users/user_999999`
-- Expected Result: Resource not found
-- Expected Status Code: `404 Not Found`
-- Outcome: ✅ Verified via Postman
+### T03 — Nonexistent Object
 
----
+Request:
+
+`GET /users/user_999999`
+
+The committed Postman collection uses a bearer token variable for this request.
+
+Evidence:
+
+- `evidence/CP-1.4-T01_03_get-user-999999_404.png`
+
+Captured result:
+
+- `404 Not Found`
+
+**Interpretation:** nonexistent-object handling is confirmed.
 
 ## Tooling
-- Postman (manual execution)
-- Environment variable:
-  - `base_url`
-- No authentication token used during this checkpoint
 
----
+- Postman
+- manual API execution
+- Bearer token scenarios
+- environment variables
 
-## Evidence
-Postman executions confirmed:
+## Finding
 
-- Valid user access returns `200 OK`
-- Changing the object ID returns `200 OK`
-- Nonexistent ID returns `404 Not Found`
+### Object Access Is Observable, but Authenticated BOLA Is Not Yet Proven
 
-Evidence files:
-- `CP-1.4-T01_01_get-user-100_200.png`
-- `CP-1.4-T01_02_get-user-101_200.png`
-- `CP-1.4-T01_03_get-user-999999_404.png`
+The current artifacts demonstrate:
 
-No sensitive credentials were persisted.
+- existing user object returned with no authentication context in the baseline run
+- changed object ID returned `200` in a request carrying an invalid token
+- nonexistent object returned `404`
 
----
+These observations justify further access-control testing.
 
-## Findings
+However, a definitive BOLA finding requires:
 
-The API currently allows unrestricted object-level access.
+- a valid authenticated principal
+- a second principal
+- known object ownership
+- a documented authorization boundary
+- proof that the first principal can access the second principal's object
 
-The server does not verify whether the requesting party is authorized
-to access the requested `userId`.
+That evidence is not present in the current checkpoint.
 
-Because authentication is not implemented at this stage,
-object-level authorization checks are also absent.
+### Classification
 
-In a production environment, this behavior would indicate:
+**Access-control / authentication concern — authenticated BOLA validation pending**
 
-> Broken Object Level Authorization (BOLA) vulnerability.
+## Potential Production Risk
 
----
+If authenticated users can modify object identifiers and access objects outside their authorization boundary,
+potential impact can include:
 
-## Risk (Real-World Scenario)
+- cross-user data access
+- cross-tenant exposure
+- object enumeration
+- privacy violations
+- unauthorized modification or disclosure, depending on endpoint capability
 
-If authentication were implemented without proper object-level authorization:
+**Potential Severity: High**
 
-- Attackers could enumerate user IDs.
-- Attackers could access other users' data.
-- Sensitive information could be exposed.
-
-Severity (Production Context): **High**
-
----
-
-## Security Notes
-
-- The system correctly handles nonexistent objects (`404`).
-- However, object-level access control is not enforced.
-- Authorization logic tied to authenticated identity is missing.
-
----
+Severity is contextual and should be assigned only after the production authorization model
+and affected data are understood.
 
 ## Recommendation
 
-When authentication is implemented:
+1. Enforce authentication before protected object access.
+2. Establish a trusted principal from validated credentials.
+3. Apply object-level authorization based on ownership, role, tenant, or policy.
+4. Deny access by default when authorization cannot be established.
+5. Use an appropriate response:
+   - `401 Unauthorized` for missing/invalid authentication
+   - `403 Forbidden` for authenticated but unauthorized access
+   - optionally `404 Not Found` if object-existence concealment is part of the design
+6. Add automated cross-user authorization tests.
 
-1. Extract user identity from token (e.g., JWT subject claim).
-2. Compare token identity with requested `userId`.
-3. Reject mismatched requests with:
-   - `403 Forbidden`
-4. Implement centralized authorization middleware.
+## Next Validation Matrix
 
----
+A future BOLA validation should include at least:
 
-## Conclusion
+| Scenario | Expected |
+|---|---|
+| User A → User A object | Allowed |
+| User A → User B object | Denied |
+| User B → User A object | Denied |
+| Missing token → protected object | Denied |
+| Invalid token → protected object | Denied |
+| Privileged role → target object | Policy-dependent |
 
-The `/users/{userId}` endpoint currently does not enforce object-level authorization.
+## Evidence
 
-This is expected within the lab environment (authentication not yet implemented),
-but would constitute a critical vulnerability in production systems.
+Legacy evidence filenames are retained as committed:
 
----
+- `evidence/CP-1.4-T01_01_get-user-100_200.png`
+- `evidence/CP-1.4-T01_02_get-user-101_200.png`
+- `evidence/CP-1.4-T01_03_get-user-999999_404.png`
+
+Supporting Postman assets:
+
+- `postman/cp-1.4-idor-bola.postman_collection`
+- `postman/idor-auth-env.postman_environment.json`
+
+## Limitation
+
+The existing artifact names use `T01_01`, `T01_02`, and `T01_03`.
+The documentation maps these legacy evidence files to normalized scenarios `T01`, `T02`, and `T03`
+without renaming the committed evidence.
 
 ## Status
 
-**CP-1.4 — T01 COMPLETED**
+**CP-1.4 — CURRENT RUN COMPLETED**
 
-- Baseline Access ✅  
-- Object ID Manipulation ⚠️  
-- Nonexistent ID Handling ✅  
+- T01 — Baseline Object Access ✅
+- T02 — Object ID Manipulation ⚠️ Access-control concern
+- T03 — Nonexistent Object Handling ✅
+
+**Follow-up:** authenticated two-principal BOLA validation required.
